@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+
+# custom lib
+from audio_organizer import AudioOrganizer
+
+
+if __name__ == "__main__":
+	AudioOrganizer().main()
