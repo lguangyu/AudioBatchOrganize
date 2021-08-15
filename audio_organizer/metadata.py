@@ -42,9 +42,21 @@ class Metadata(dict):
 		def to_formatted(self):
 			return self.to_ffmetadata()
 
+		# these are set when
+		_default_tag = "*"
 		@classmethod
-		def _setup(cls, tag, fmtstr, regex):
+		def get_default_tag(cls):
+			return cls._default_tag
+
+		@classmethod
+		def is_default(cls):
+			return cls.tag == cls.get_default_tag()
+
+		@classmethod
+		def setup_parser_params(cls, tag, fmtstr, regex, *,
+				argparse_params = None):
 			cls.tag, cls.fmtstr, cls.regex = tag, fmtstr, regex
+			cls.argparse_params = argparse_params
 			return cls
 
 		def __str__(self):
@@ -55,52 +67,57 @@ class Metadata(dict):
 	# below two class methods are used to add new value type (subclass of Value)
 	# to registered Metadata value type list
 	@classmethod
-	def add_value(host_cls, *, tag, fmtstr, regex):
+	def add_valtype(host_cls, *, tag, fmtstr, regex, argparse_params = None):
 		def decorator(cls):
-			cls._setup(tag, fmtstr, regex)
+			cls.setup_parser_params(tag, fmtstr, regex,
+				argparse_params = argparse_params)
+			# add to host class value type registry
 			host_cls._FORMATTER_BY_FMT[fmtstr] = cls
 			host_cls._FORMATTER_BY_TAG[tag] = cls
 			return cls
 		return decorator
-	# this formatter is called for everything not specifically defined
+	# value class decorated by this function is is called for every tag not
+	# defined by other value type
 	@classmethod
-	def default_value(host_cls):
-		return host_cls.add_value(tag = "*", fmtstr = "*", regex = ".+")
+	def add_default_valtype(host_cls):
+		def_tag = host_cls.Value.get_default_tag()
+		return host_cls.add_valtype(tag = def_tag, fmtstr = def_tag,
+			regex = ".+")
 
 	@classmethod
-	def get_formatter_by_fmtstr(cls, fmtstr, allow_default = False):
+	def get_valtype_by_fmtstr(cls, fmtstr, allow_default = False):
 		if fmtstr in cls._FORMATTER_BY_FMT:
 			return cls._FORMATTER_BY_FMT[fmtstr]
 		elif allow_default:
-			return cls._FORMATTER_BY_FMT["*"]
+			return cls._FORMATTER_BY_FMT[cls.Value.get_default_tag()]
 		else:
-			raise cls.MetadataError("invalid formatter fmtstr '%s'" % fmtstr)
+			raise cls.MetadataError("invalid value fmtstr '%s'" % fmtstr)
 		return
 
 	@classmethod
-	def get_formatter_by_tag(cls, tag, allow_default = False):
+	def get_valtype_by_tag(cls, tag, allow_default = False):
 		if tag in cls._FORMATTER_BY_TAG:
 			return cls._FORMATTER_BY_TAG[tag]
 		elif allow_default:
-			return cls._FORMATTER_BY_TAG["*"]
+			return cls._FORMATTER_BY_TAG[cls.Value.get_default_tag()]
 		else:
-			raise cls.MetadataError("invalid formatter tag '%s'" % tag)
+			raise cls.MetadataError("invalid valtype tag '%s'" % tag)
 		return
 
 	@classmethod
-	def iter_formatter_tags(cls, sort = True):
+	def iter_valtype_tags(cls, sort = True):
 		meth = sorted if sort else lambda k: k
 		yield from meth(cls._FORMATTER_BY_TAG.keys())
 
 	@classmethod
-	def iter_formatters(cls, sort = True):
-		for k in cls.iter_formatter_tags(sort = sort):
-			yield cls.get_formatter_by_tag(k)
+	def iter_valtypes(cls, sort = True):
+		for k in cls.iter_valtype_tags(sort = sort):
+			yield cls.get_valtype_by_tag(k)
 
 	@classmethod
 	def get_fields_help_str(cls):
-		splits = ["%s=%s" % (f.fmtstr, f.tag) for f in cls.iter_formatters()\
-			if (f.tag != "*")]
+		splits = ["%s=%s" % (f.fmtstr, f.tag) for f in cls.iter_valtypes()\
+			if (not f.is_default())]
 		return (", ").join(splits)
 
 	def __init__(self, *ka, ffmetadata = None, **kw):
@@ -126,10 +143,10 @@ class Metadata(dict):
 			if (not line) or line.startswith(cls.COMMENTS):
 				continue
 			tag, value = line.split(cls.TAG_SEP, maxsplit = 1)
-			# get value formatter and parse values
+			# get value valtype and parse values
 			tag = tag.lower()
-			formatter = cls.get_formatter_by_tag(tag, allow_default = True)
-			new[tag] = formatter.from_ffmetadata(value)
+			valtype = cls.get_valtype_by_tag(tag, allow_default = True)
+			new[tag] = valtype.from_ffmetadata(value)
 		return new
 
 	def save_ffmetadata(self, fname, *, force = None):
@@ -150,9 +167,9 @@ class Metadata(dict):
 				if i == "%%":
 					ret += "%"
 					continue
-				# parse by formatter
-				# here need to allow default formatter
-				tag = type(self).get_formatter_by_fmtstr(i).tag
+				# parse by valtype
+				# here need to allow default valtype
+				tag = type(self).get_valtype_by_fmtstr(i).tag
 				if tag in self:
 					ret += self[tag].to_formatted()
 				else:
@@ -170,28 +187,28 @@ class Metadata(dict):
 		"""
 		primarily used internally to turn format string into regular expressions
 		"""
-		regex, formatters = "", list()
+		regex, valtypes = "", list()
 		for i in re.split("(%.?)", fmtstr):
 			# parse each format string started with %
 			if i.startswith("%"):
 				if i == "%%":
 					regex += "%"
 					continue
-				formatter = cls.get_formatter_by_fmtstr(i)
-				formatters.append(formatter)
-				regex += "(" + formatter.regex + ")"
+				valtype = cls.get_valtype_by_fmtstr(i)
+				valtypes.append(valtype)
+				regex += "(" + valtype.regex + ")"
 			else:
 				regex += re.escape(i)
-		return regex, formatters
+		return regex, valtypes
 
 	@classmethod
 	def from_formatted(cls, fmtstr, s: str):
-		regex, formatters = cls.fmtstr_to_regex(fmtstr)
+		regex, valtypes = cls.fmtstr_to_regex(fmtstr)
 		m = re.match(regex, s)
 		if not m:
 			raise cls.MetadataError("'%s' unmatch pattern '%s'" % (s, fmtstr))
 		new = cls()
-		for f, v in zip(formatters, m.groups()):
+		for f, v in zip(valtypes, m.groups()):
 			new[f.tag] = f.from_formatted(v)
 		return new
 
@@ -207,20 +224,24 @@ class Metadata(dict):
 		return self
 
 
-# add metadata formatters
-@Metadata.default_value()
+# add metadata value types
+@Metadata.add_default_valtype()
 class DefaultValue(Metadata.Value):
 	pass
 
-@Metadata.add_value(tag = "album", fmtstr = "%A", regex = ".+")
+@Metadata.add_valtype(tag = "album", fmtstr = "%A", regex = ".+",
+	argparse_params = dict(type = str, metavar = "str"))
 class AlbumValue(Metadata.Value):
 	pass
 
-@Metadata.add_value(tag = "title", fmtstr = "%T", regex = ".+")
+@Metadata.add_valtype(tag = "title", fmtstr = "%T", regex = ".+",
+	argparse_params = dict(type = str, metavar = "str"))
 class TitleValue(Metadata.Value):
 	pass
 
-@Metadata.add_value(tag = "artist", fmtstr = "%a", regex = ".+")
+@Metadata.add_valtype(tag = "artist", fmtstr = "%a", regex = ".+",
+	argparse_params = dict(type = str, metavar = "str",
+	help_extra = ", multiple artists are comma-separated"))
 class ArtistValue(Metadata.Value):
 	@classmethod
 	def from_ffmetadata(cls, value):
@@ -233,24 +254,28 @@ class ArtistValue(Metadata.Value):
 	def to_formatted(self):
 		return (",").join(self.value)
 
-@Metadata.add_value(tag = "disc", fmtstr = "%d", regex = "\\d+")
+@Metadata.add_valtype(tag = "disc", fmtstr = "%d", regex = "\\d+",
+	argparse_params = dict(type = util.PosInt, metavar = "#"))
 class DiscValue(Metadata.Value):
 	@classmethod
 	def from_ffmetadata(cls, value):
 		return cls(value = util.PosInt(value))
 
-@Metadata.add_value(tag = "track", fmtstr = "%t", regex = "\\d+")
+@Metadata.add_valtype(tag = "track", fmtstr = "%t", regex = "\\d+",
+	argparse_params = dict(type = util.PosInt, metavar = "#"))
 class TrackValue(Metadata.Value):
 	@classmethod
 	def from_ffmetadata(cls, value):
 		return cls(value = util.PosInt(value))
 
-@Metadata.add_value(tag = "year", fmtstr = "%y", regex = "\\d+")
+@Metadata.add_valtype(tag = "year", fmtstr = "%y", regex = "\\d+",
+	argparse_params = dict(type = util.PosInt, metavar = "yyyy"))
 class YearValue(Metadata.Value):
 	@classmethod
 	def from_ffmetadata(cls, value):
 		return cls(value = util.PosInt(value))
 
-@Metadata.add_value(tag = "genre", fmtstr = "%g", regex = ".+")
+@Metadata.add_valtype(tag = "genre", fmtstr = "%g", regex = ".+",
+	argparse_params = dict(type = str, metavar = "str"))
 class GenreValue(Metadata.Value):
 	pass

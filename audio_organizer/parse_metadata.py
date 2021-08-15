@@ -34,22 +34,15 @@ class SubprogParseMetadata(subprog.SubprogWithLogBase,
 				"metadata file; "
 				"exclusive with --append-merge and assumes -f/--force "
 				"(default: no)")
-		gp = ap.add_argument_group("manually override metadata tags")
-		gp.add_argument("-A", "--album", type = str, metavar = "str",
-			help = "set to override album tag value")
-		gp.add_argument("-T", "--title", type = str, metavar = "str",
-			help = "set to override title tag value")
-		gp.add_argument("-a", "--artist", type = str, metavar = "str",
-			help = "set to override artist tag value, multiple artists are "
-				"comma-separated")
-		gp.add_argument("-d", "--disc", type = util.PosInt, metavar = "int",
-			help = "set to override disc tag value, must be positive integer")
-		gp.add_argument("-t", "--track", type = util.PosInt, metavar = "int",
-			help = "set to override track tag value, must be positive integer")
-		gp.add_argument("-y", "--year", type = util.PosInt, metavar = "year",
-			help = "set to override year tag value, must be positive integer")
-		gp.add_argument("-g", "--genre", type = str, metavar = "str",
-			help = "set to override genre tag value")
+		# add options to allow manually override values
+		gp = ap.add_argument_group("manually override metadata values")
+		for valtype in Metadata.iter_valtypes():
+			params = valtype.argparse_params
+			if (not valtype.is_default()) and params:
+				gp.add_argument("--" + (valtype.tag.replace("_", "-")),
+					type = params["type"], metavar = params["metavar"],
+					help = ("override tag '%s'" % valtype.tag)\
+						+ params.get("help_extra", ""))
 		return ap
 
 	def refine_args(self, args):
@@ -58,22 +51,12 @@ class SubprogParseMetadata(subprog.SubprogWithLogBase,
 			args.force = True
 		return args
 
-	OVERRIDE_FIELDS = [
-		"album",
-		"artist",
-		"disc",	
-		"title",
-		"track",
-		"year",	
-		"genre",
-	]
-
 	def override_by_manual(self, args, metadata):
-		for i in type(self).OVERRIDE_FIELDS:
-			val = getattr(args, i)
-			if val:
-				formatter = Metadata.get_formatter_by_tag(i)
-				metadata[formatter.tag] = formatter.from_formatted(val)
+		for valtype in Metadata.iter_valtypes():
+			if not valtype.is_default():
+				val = getattr(args, valtype.tag)
+				if val:
+					metadata[valtype.tag] = valtype.from_formatted(val)
 		return
 
 	@subprog.SubprogWithLogBase.with_log()
