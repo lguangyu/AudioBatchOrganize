@@ -46,20 +46,11 @@ class Metadata(dict):
 		def _setup(cls, tag, fmtstr, regex):
 			cls.tag, cls.fmtstr, cls.regex = tag, fmtstr, regex
 			return cls
-		@property
-		def tag(self):
-			return self._tag
-		@property
-		def fmtstr(self):
-			return self._fmtstr
-		@property
-		def regex(self):
-			return self._regex
 
 		def __str__(self):
 			return self.to_ffmetadata()
 		def __repr__(self):
-			return str(self)
+			return repr(str(self))
 
 	# below two class methods are used to add new value type (subclass of Value)
 	# to registered Metadata value type list
@@ -138,7 +129,7 @@ class Metadata(dict):
 			# get value formatter and parse values
 			tag = tag.lower()
 			formatter = cls.get_formatter_by_tag(tag, allow_default = True)
-			new[tag] = formatter.from_formatted(value)
+			new[tag] = formatter.from_ffmetadata(value)
 		return new
 
 	def save_ffmetadata(self, fname, *, force = None):
