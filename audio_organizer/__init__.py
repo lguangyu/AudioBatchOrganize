@@ -16,6 +16,7 @@ from . import parse_metadata
 from . import remap_metadata
 from . import sort_by_metadata
 from . import sort_disc_track
+from . import split_by_cue
 
 
 # main program class
