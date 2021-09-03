@@ -18,6 +18,7 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 	@subprog.SubprogBase.append_opt_verbose
 	@subprog.SubprogBase.append_opt_dryrun
 	@subprog.SubprogBase.append_opt_force
+	@subprog.SubprogBase.append_opt_program("ffmpeg")
 	def create_argparser(self, subparsers, *ka, **kw):
 		ap = super().create_argparser(subparsers, *ka, **kw)
 		ap.add_argument("-p", "--rename-pattern", type = str, default = None,
@@ -32,9 +33,9 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 				"need to be changed, therefore can accelerate the process by "
 				"bypassing making changes in file content; exclusive with "
 				"-R/--re-encode (default: no)")
-		gp.add_argument("-R", "--re-encode", type = str, default = None,
+		gp.add_argument("-R", "--transcode", type = str, default = None,
 			metavar = "format",
-			help = "re-encode audio stream to given format/extension; if not "
+			help = "transcode audio stream to given format/extension; if not "
 				"set, the extension of input audio file will be used; exclusive"
 				" with -m/--move-only (default: no)")
 		return ap
@@ -53,13 +54,13 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 		new_fname = self.util.fname_prevent_monkey_patch(new_fname)
 		ffmetadata = self.util.fname_prevent_monkey_patch(metadata.ffmetadata)
 		# make cmd
-		cmd = ["ffmpeg"]
+		cmd = [args.ffmpeg]
 		if args.force:
 			cmd.append("-y")
 		cmd.extend(["-i", fname, "-i", ffmetadata, "-map_metadata", "1"])
 		# differentiate if need re-encode
 		# if re-encode is set, it should not be None
-		if args.re_encode:
+		if args.transcode:
 			cmd.append(new_fname)
 		else:
 			cmd.extend(["-codec", "copy", new_fname])
@@ -76,7 +77,7 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 			metadata = Metadata.read_ffmetadata(ffmetadata)
 			# figure out new file name
 			# first 1 selects the extension, second 1: discard extsep
-			extension = args.re_encode or os.path.splitext(fname)[1][1:]
+			extension = args.transcode or os.path.splitext(fname)[1][1:]
 			if args.rename_pattern:
 				new_fname = self.util.append_filename_extension(
 					metadata.format(args.rename_pattern), extension

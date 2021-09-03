@@ -38,6 +38,19 @@ class SubprogBase(abc.ABC):
 			return wrapper
 		return decorator
 
+	def append_opt_program(prog_name, *, default: str = None,
+			help_extra = None):
+		default = prog_name if default is None else default
+		help_str = "path to call '%s' program (default: %s)"\
+			% (prog_name, default)
+		if help_extra:
+			help_str += help_extra
+		def decorator(func):
+			deco = SubprogBase.append_opt("--" + prog_name, type = str,
+				default = default, metavar = "path", help = help_str)
+			return deco(func)
+		return decorator
+
 	def append_opt_force(func):
 		deco = SubprogBase.append_opt("-f", "--force", action = "store_true",
 			help = "force overwrite output files (default: no)")
