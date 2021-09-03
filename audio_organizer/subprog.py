@@ -39,15 +39,17 @@ class SubprogBase(abc.ABC):
 		return decorator
 
 	def append_opt_program(prog_name, *, default: str = None,
-			help_extra = None):
+			dest: str = None, help_extra = None):
 		default = prog_name if default is None else default
+		dest = prog_name if dest is None else dest
 		help_str = "path to call '%s' program (default: %s)"\
 			% (prog_name, default)
 		if help_extra:
 			help_str += help_extra
 		def decorator(func):
-			deco = SubprogBase.append_opt("--" + prog_name, type = str,
-				default = default, metavar = "path", help = help_str)
+			deco = SubprogBase.append_opt("--%s-path" % prog_name, type = str,
+				dest = dest, default = default, metavar = "path",
+				help = help_str)
 			return deco(func)
 		return decorator
 

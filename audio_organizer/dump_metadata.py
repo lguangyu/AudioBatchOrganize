@@ -14,6 +14,7 @@ class SubprogDumpMetadata(subprog.SubprogWithLogBase,
 	@subprog.SubprogBase.append_opt_verbose
 	@subprog.SubprogBase.append_opt_dryrun
 	@subprog.SubprogBase.append_opt_force
+	@subprog.SubprogBase.append_opt_program("ffmpeg")
 	def create_argparser(self, subparsers, *ka, **kw):
 		ap = super().create_argparser(subparsers, *ka, **kw)
 		return ap
@@ -22,7 +23,7 @@ class SubprogDumpMetadata(subprog.SubprogWithLogBase,
 	def subprog_main(self, args):
 		for fname in self.read_list(args):
 			ffmetadata = Metadata.standard_ffmetadata(fname)
-			cmd = ["ffmpeg"]
+			cmd = [args.ffmpeg]
 			if args.force:
 				cmd.append("-y")
 			cmd.extend(["-i", self.util.fname_prevent_monkey_patch(fname),

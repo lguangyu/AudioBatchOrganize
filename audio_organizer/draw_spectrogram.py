@@ -13,6 +13,7 @@ class SubprogDrawSpectrogram(subprog.SubprogWithLogBase,
 		subprog.ListBasedSubprogBase):
 	@subprog.SubprogBase.append_opt_verbose
 	@subprog.SubprogBase.append_opt_dryrun
+	@subprog.SubprogBase.append_opt_program("sox")
 	def create_argparser(self, subparsers, *ka, **kw):
 		ap = super().create_argparser(subparsers, *ka, **kw)
 		ap.add_argument("-g", "--image-format", type = str, default = "png",
@@ -24,7 +25,7 @@ class SubprogDrawSpectrogram(subprog.SubprogWithLogBase,
 	def subprog_main(self, args):
 		for fname in self.read_list(args):
 			spec = self.util.append_filename_extension(fname, args.image_format)
-			cmd = ["sox", self.util.fname_prevent_monkey_patch(fname), "-n",
+			cmd = [args.sox, self.util.fname_prevent_monkey_patch(fname), "-n",
 				"spectrogram", "-o", self.util.fname_prevent_monkey_patch(spec)]
 			self.logged_external_call(cmd, dry_run = args.dry_run,
 				verbose = args.verbose)
