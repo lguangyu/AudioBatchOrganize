@@ -103,5 +103,5 @@ class StaticUtilityMethods(object):
 		return bname + os.path.extsep + extension
 
 	@staticmethod
-	def get_conflict_prefix():
+	def get_default_conflict_prefix():
 		return "CONFLICT" + os.path.extsep

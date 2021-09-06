@@ -26,6 +26,10 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 			help = ("output file renaming pattern, not including extension; "
 				"available fields: %s (default: no renaming)"\
 				% Metadata.get_fields_help_str()).replace("%", "%%"))
+		ap.add_argument("-C", "--conflict-prefix", type = str,
+			default = self.util.get_default_conflict_prefix(), metavar = "str",
+			help = "file name conflict prefix to remove (default: %s)"\
+				% self.util.get_default_conflict_prefix())
 		gp = ap.add_mutually_exclusive_group()
 		gp.add_argument("-m", "--move-only", action = "store_true",
 			help = "when set, listed files will be only moved/renamed without "
@@ -90,7 +94,7 @@ class SubprogRemapMetadata(subprog.SubprogWithLogBase,
 			new_fname = self.util.fname_replace_win_special_chars(new_fname)
 			# make sure no conflicts
 			if self.util.samefile(fname, new_fname):
-				new_fname = self.util.get_conflict_prefix() + new_fname
+				new_fname = args.conflict_prefix + new_fname
 			# remap metadata
 			if args.move_only:
 				self._remap_by_move(fname, new_fname, args, metadata)

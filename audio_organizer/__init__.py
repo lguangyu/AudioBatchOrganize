@@ -7,16 +7,18 @@ import traceback
 from . import subprog
 from .metadata import Metadata
 # subprog implementations
-# these modules only need import when they will be added to subprogram registry
-# automatically
+# these modules only need to be imported here, as they will be added to the
+# subprogram registry automatically during importing
 from . import clean_temps
 from . import draw_spectrogram
 from . import dump_metadata
 from . import parse_metadata
 from . import remap_metadata
+from . import rename_conflict
 from . import sort_by_metadata
 from . import sort_disc_track
 from . import split_by_cue
+from . import strip_cv
 
 
 # main program class
