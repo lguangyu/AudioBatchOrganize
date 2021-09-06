@@ -4,7 +4,6 @@ import glob
 import shutil
 # custom lib
 from . import subprog
-from audio_organizer import Metadata
 
 
 @subprog.SubprogReg.new_subprog("rename_conflict",

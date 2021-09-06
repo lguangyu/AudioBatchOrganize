@@ -4,7 +4,6 @@ import re
 import shutil
 # custom lib
 from . import subprog
-from audio_organizer import Metadata
 
 
 @subprog.SubprogReg.new_subprog("strip_cv",
@@ -29,13 +28,17 @@ class SubprogStripCv(subprog.SubprogWithLogBase):
 	def _strip_cv(self, fname, pattern, *, force = None, dry_run = None,
 			verbose = None):
 		new_fname = re.sub(pattern, "", fname)
-		if verbose:
-			self.log_err("renaming: %s -> %s\n" % (fname, new_fname))
-		if not dry_run:
-			if (not os.path.exists(new_fname)) or force:
-				shutil.move(fname, new_fname)
-			else:
-				self.log_err("existing: %s\n" % (new_fname))
+		if fname == new_fname:
+			if verbose:
+				self.log_err("skipping: %s\n" % new_fname)
+		else:
+			if verbose:
+				self.log_err("renaming: %s -> %s\n" % (fname, new_fname))
+			if not dry_run:
+				if (not os.path.exists(new_fname)) or force:
+					shutil.move(fname, new_fname)
+				else:
+					self.log_err("existing: %s\n" % new_fname)
 		return
 
 	@subprog.SubprogWithLogBase.with_log()
