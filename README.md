@@ -16,9 +16,9 @@ Typical use cases include:
 External dependencies
 ---------------------
 
-`ffmpeg`: required to transcode between audio formats, read and remap metadata
-`shntools`: required to split with CUE file
-`sox`: required to draw audio spectrogram
+* `ffmpeg`: required to transcode between audio formats, read and remap metadata
+* `shntools`: required to split with CUE file
+* `sox`: required to draw audio spectrogram
 
 Installation
 ------------
