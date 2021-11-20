@@ -5,7 +5,7 @@ import shutil
 # custom lib
 from . import subprog
 from . import util
-from audio_organizer import Metadata
+from .metadata import Metadata
 
 
 @subprog.SubprogReg.new_subprog("sort_by_metadata",

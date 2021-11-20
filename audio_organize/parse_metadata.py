@@ -4,7 +4,7 @@ import os
 # custom lib
 from . import subprog
 from . import util
-from audio_organizer import Metadata
+from .metadata import Metadata
 
 
 @subprog.SubprogReg.new_subprog("parse_metadata",

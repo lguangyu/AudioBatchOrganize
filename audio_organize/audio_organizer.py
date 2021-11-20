@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
-import traceback
 # custom lib
 from . import subprog
 from .metadata import Metadata
@@ -53,5 +51,4 @@ class AudioOrganizer(object):
 
 	def main(self):
 		self.parse_args()
-		self.call_arg_subprog_main()
-		return
+		return self.call_arg_subprog_main()

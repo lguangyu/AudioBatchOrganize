@@ -4,7 +4,7 @@ import os
 import shutil
 # custom lib
 from . import subprog
-from audio_organizer import Metadata
+from .metadata import Metadata
 
 
 @subprog.SubprogReg.new_subprog("remap_metadata",
