@@ -106,7 +106,7 @@ audio-organize remap_metadata -p "%T - %a" -R flac list
 ```
 
 `remap_metadata` will update `*.metadata` files back into the audio files.
-In addition, `-p "%T - %a"` requires the output file names will be in
+In addition, `-p "%T - %a"` requires the output file names to be in
 `<title> - <artist>` format (file extensions will be added automatically).
 Finally `-R flac` instructs the output to be transcoded into `flac`.
 
@@ -146,3 +146,4 @@ Known issues
 
 * In some cases, conflict file names cannot be recognized
 * Need file name mangling to trim down those longer than system file name limit
+* Certain versions of `shntool` can experience error dealing with >16bit formats
